@@ -91,35 +91,39 @@ for (int wh = 0; wh < (particles.pt.size() - 1); wh++)
      Dibmin = 100000;
 
      //Loop over every pair of particle
-for (int ispot = 0; ispot < (particles.pt.size() - 1); ispot++)
+Long64_t pleasestop = nentries;
+
+while ( pleasestop > 0)
   {
-    for (int jspot = ispot + 1; jspot < (particles.pt.size() - 1); jspot++)
+    for (int ispot = 0; ispot < pleasestop; ispot++)
       {
-	Dib = pow(particles.pt[jspot], 2);
-        deltaphi = particles.phi[jspot] - particles.pho[ispot];
-        deltaeta = particles.eta[jspot] - particles.eta[ispot];
-        Rij = hypot( deltaphi, deltaeta);
-        Dij = min( pow( particles.pt[jspot], 2), pow( particles.pt[ispot]), 2);
-        Dij = Dij * pow( ( Rij / R), 2);
-        
-        //Determine if this is the smallest so far
-        if (Dij < Dijmin)
-          {
-   	 Dijmin = Dij;
-   	 //Save the particle index so they can be removed late
-       	 minindex_i = ispot;
-       	 minindex_j = jspot;
-          }
+	for (int jspot = ispot + 1; jspot < pleasestop; jspot++)
+	  {
+	    Dib = pow(particles.pt[jspot], 2);
+	    deltaphi = particles.phi[jspot] - particles.pho[ispot];
+	    deltaeta = particles.eta[jspot] - particles.eta[ispot];
+	    Rij = hypot( deltaphi, deltaeta);
+	    Dij = min( pow( particles.pt[jspot], 2), pow( particles.pt[ispot]), 2);
+	    Dij = Dij * pow( ( Rij / R), 2);
+	    
+	    //Determine if this is the smallest so far
+	    if (Dij < Dijmin)
+	      {
+		Dijmin = Dij;
+		//Save the particle index so they can be removed late
+		minindex_i = ispot;
+		minindex_j = jspot;
+	      }
             
-        //Determine if this is the smallest so far
-        if (Dib < Dibmin)
-          {
-	    Dibmin = Dib;
-	    //Save the particle index so it can be removed later
-	    minindex_jB = jspot; 
+	    //Determine if this is the smallest so far
+	    if (Dib < Dibmin)
+	      {
+		Dibmin = Dib;
+		//Save the particle index so it can be removed later
+		minindex_jB = jspot; 
+	      }
 	  }
       }
-  }
     //If the smallest is a beam, add to beam list and remove from particle list
     if (Dibmin < Dijmin)
       {
@@ -133,24 +137,48 @@ for (int ispot = 0; ispot < (particles.pt.size() - 1); ispot++)
 	    particles.eta[kspot] = particles.eta[kspot + 1];
 	    particles.phi[kspot] = particles.phi[kspot + 1];
 	    particles.mass[kspot] = particles.mass[kspot + 1];	    
+	    pleasestop--;
 	  }
       }
-    //If the smallest is not a beam, add momenta???, add to list, and remove other two particles
+
+    //If the smallest is not a beam, add momenta, add to list, and remove other two particles
+    float px, py, pz, newphii, newetai, newmass, newtheta, totalpm, newpT;
+
     else
       {
-	//add momenta
-	for( int kspot = minindex_j; kspot < (particles.pt.size() - 2); kspot++)
+	//ADDING MOMENTUM
+	
+	//Adds the components of momentum in the x, y, and z directions
+	px = (particles.pt[minindex_i] * cos(particles.phi[minindex_i])) + (particles.pt[minindex_j] * cos(particles.phi[minindex_j]));
+	py = (particles.pt[minindex_i] * sin(particles.phi[minindex_i])) + (particles.pt[minindex_j] * sin(particles.phi[minindex_j]));
+	pz = (particles.pt[minindex_i] * sinh(particles.eta[minindex_i])) + (particles.pt[minindex_i] * sinh(particles.eta[minindex_j]));
+	
+	//Calculate new values for new paricle
+	newpT = hypot(px, py);
+	totalpm = sqrt((px * px) + (py * py) + (pz * pz));
+	newtheta = asin( newpT / totalpm);
+	neweta = -log( tan( newtheta/ 2));
+	newphi = acos( px / (totalpm * sin(newtheta)));
+	newmass = particles.mass[minindex_i] + particles.mass[minindex_j];
+
+	//Remove the j particle and shift everything down
+	for( int kspot = minindex_j; kspot < pleasestop; kspot++)
           {
             particles.pt[kspot] = particles.pt[kspot + 1];
             particles.eta[kspot] = particles.eta[kspot + 1];
             particles.phi[kspot] = particles.phi[kspot + 1];
             particles.mass[kspot] = particles.mass[kspot + 1];
 	  }
-	particles.pt[minindex_i] = ;//added momenta?
-	particles.eta[minindex_i] = ;//??
-	particles.phi[minindex_i] = ;//??
-	particles.mass[minindex_i] = ;//??
-      }	     
+	//decrease the loop size by one to account for the last and 2nd to last values being equal
+	pleasestop--;
+
+	//Assign new particle values to the i particle;
+	particles.pt[minindex_i] = newpT;
+	particles.eta[minindex_i] = neweta;
+	particles.phi[minindex_i] = newphi;
+	particles.mass[minindex_i] = newmass;
+      }
+  }	     
 
      //float pti, ptj, ptBeam, phii, phij, massi, massj, etai, etaj;
 
