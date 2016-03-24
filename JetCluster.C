@@ -10,6 +10,9 @@
 #include "TFile.h"
 #include "TTree.h"
 #include <fstream>
+#include <list>
+
+using namespace std;
 
 void JetCLuster::Loop()
 {
@@ -37,96 +40,125 @@ void JetCLuster::Loop()
 //    fChain->GetEntry(jentry);       //read all branches
 //by  b_branchname->GetEntry(ientry); //read only this branch
    if (fChain == 0) return;
-   TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
+   //TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
 
    Long64_t nentries = fChain->GetEntriesFast();
 
    Long64_t nbytes = 0, nb = 0;
-   for (Long64_t jentry=0; jentry < nentries;jentry++) {
+   for (Long64_t jentry=0; jentry < nentries;jentry++) 
+     {
       Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   
       nbytes += nb;
       // if (Cut(ientry) < 0) continue;
-   }
-}  
+     }
+  
 
 //void JetCLuster::Algorithm(){
 
+//These variables are used in the calculations                                                       
+   float Dib, Dij, Rij, deltaphi, deltaeta, Dijmin, Dibmin;
+   Int minindex_i, minindex_j, minindex_jB;
+   float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT;
+
+//This value can be changed easily and it denotes the size of the cones                             
+   float Rrr = .4;
+
+//Set Speed of light for Energy Calc
+   const float c = 299792458;
+
+//Function to find distance between particles
+   float Distance_P (int a, int b)
+   {
+     deltaphi = particles.phi[a] - particles.phi[b];
+     deltaeta = particles.eta[a] - particles.eta[b];
+     Rij = hypot( deltaphi, deltaeta);
+     Dij = min( pow( particles.pt[a], -2), pow( particles.pt[b]), -2);
+     Dij = Dij * pow( ( Rij / Rrr), 2);
+     return Dij;
+   }
+
+//Function for Beam Distance
+   float Distance_J (int a)
+   {
+     Dib = pow(particles.pt[jspot], 2);
+     return Dib;
+   }
+
+//Function for Phi Wrap Soln
+
+//Function for Adding Momentum
+   
+
 //Create Canvas for Histogram
-TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 700, 500);
-c1 -> SetFillColor(42);
+ TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 700, 500);
+ c1 -> SetFillColor(42);
 
-TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
+ TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
+ int numentry = pt->size();
 
-Long64_t nentries = fChain->GetEntriesFast();
 //Declare a struct (P) to hold arrays which will hold all of the values. The object particle of type P can access all of these values
-     struct P
-     {
-       float pt[nentries];
-       float phi[nentries];
-       float eta[nentries];
-       float mass[nentries];
-     } particles, jets;
+ struct P 
+{
+       float pt;
+       float phi;
+       float eta;
+       float mass;
+ } item;
 
-     //solve the phi wrap problem?
+ list<P> Particles;
+ list<P> Jets;
 
-     //Fill the array "particles" with the values from the vectors
-for (int wh = 0; wh < (particles.pt.size() - 1); wh++)
-       {
-	 particles.pt[wh] = pt->GetEntry(wh);
-	 particles.phi[wh] = phi->GetEntry(wh);
-	 particles.eta[wh] = eta->GetEntry(wh);
-	 particles.mass[wh] = mass->GetEntry(wh);
-       }
+//Fill the array "particles" with the values from the vectors
+//Check pointer to array syntax for accesing element
+ for (int wh = 0; wh < (particles.pt.size() - 1); wh++)
+   {
+     item.pt = pt[wh];
+     item.phi = phi[wh];
+     item.eta = eta[wh];
+     item.mass = mass[wh];
+     Particles.push_back( item );
+   }
      
-     //These variables are used in the calculations
-     float Dib, Dij, Rij, deltaphi, deltaeta, Dijmin, Dibmin, minindex_i, minindex_j, minindex_jB;
+//This is to make sure that the first value checked is assigned to the smallest
+ Dijmin = 100000;
+ Dibmin = 100000;
 
-     //This value can be changed easily and it denotes the size of the cones
-     float Rrr = .4;
-     
-     //This is to make sure that the first value is smaller than this
-     Dijmin = 100000;
-     Dibmin = 100000;
-
-     //Loop over every pair of particle
-Long64_t pleasestop = nentries;
-
-while ( pleasestop > 0)
+//Loop over every pair of particle
+ while ( !Particles.empty() )
+   {
+     for
+//Stop condition while list is not empty
+ while ( !Particles.empty() )
   {
     for (int ispot = 0; ispot < pleasestop; ispot++)
       {
 	for (int jspot = ispot + 1; jspot < pleasestop; jspot++)
 	  {
-	    Dib = pow(particles.pt[jspot], 2);
-	    deltaphi = particles.phi[jspot] - particles.pho[ispot];
-	    deltaeta = particles.eta[jspot] - particles.eta[ispot];
-	    Rij = hypot( deltaphi, deltaeta);
-	    Dij = min( pow( particles.pt[jspot], 2), pow( particles.pt[ispot]), 2);
-	    Dij = Dij * pow( ( Rij / R), 2);
-	    
+	    Dij = Distance_P(ispot, jspot);
+	    Dib = Distance_J(jspot);
+	  } 
 	    //Determine if this is the smallest so far
 	    if (Dij < Dijmin)
 	      {
 		Dijmin = Dij;
-		//Save the particle index so they can be removed late
-		minindex_i = ispot;
+		minindex_i = ispot; //Save the particle index so they can be removed later
 		minindex_j = jspot;
-	      }
-            
+	      }    
 	    //Determine if this is the smallest so far
 	    if (Dib < Dibmin)
 	      {
 		Dibmin = Dib;
-		//Save the particle index so it can be removed later
-		minindex_jB = jspot; 
+		minindex_jB = jspot; //Save the particle index so it can be removed later
 	      }
 	  }
       }
     //If the smallest is a beam, add to beam list and remove from particle list
     if (Dibmin < Dijmin)
       {
+	Jets.push_back(
+
 	jets.pt[0] = particles.pt[minindex_jB];
 	jets.eta[0] = particles.eta[minindex_jB];
 	jets.phi[0] = particles.phi[minindex_jB];
@@ -142,7 +174,6 @@ while ( pleasestop > 0)
       }
 
     //If the smallest is not a beam, add momenta, add to list, and remove other two particles
-    float px, py, pz, newphii, newetai, newmass, newtheta, totalpm, newpT;
 
     else
       {
@@ -159,6 +190,7 @@ while ( pleasestop > 0)
 	newtheta = asin( newpT / totalpm);
 	neweta = -log( tan( newtheta/ 2));
 	newphi = acos( px / (totalpm * sin(newtheta)));
+	//***Add energies not mass***
 	newmass = particles.mass[minindex_i] + particles.mass[minindex_j];
 
 	//Remove the j particle and shift everything down
@@ -169,68 +201,16 @@ while ( pleasestop > 0)
             particles.phi[kspot] = particles.phi[kspot + 1];
             particles.mass[kspot] = particles.mass[kspot + 1];
 	  }
-	//decrease the loop size by one to account for the last and 2nd to last values being equal
-	pleasestop--;
-
 	//Assign new particle values to the i particle;
 	particles.pt[minindex_i] = newpT;
 	particles.eta[minindex_i] = neweta;
 	particles.phi[minindex_i] = newphi;
 	particles.mass[minindex_i] = newmass;
       }
-  }	     
-
-     //float pti, ptj, ptBeam, phii, phij, massi, massj, etai, etaj;
-
-     TBranch *beampt = T->Branch("pt", &pt, "pt/F");
-     T-> SetBranchAddress("pt", &pt);
-     T-> SetBranchAddress("eta", &eta);
-     T-> SetBranchAddress("phi", &phi);
-     T-> SetBranchAddress("mass", &mass);
-
-     TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
-     TH1F* histo2 = new TH1F("histo2", "Test for pT", 100, 0, 200);
-     float Dib, Dij, Rij;
-     float min = 1000000;
-     float Rrr = .4;
-     for (Long64_t ispot = 0; ispot < nentries ; ispot++)
-       {
-    	 for (Long64_t jspot = ispot + 1; jspot < nentries; jspot++)
-	   {
-	     //Anti -kT algorithm                                                            
-	     Dib = pow( particle.pt[jspot], -2);
-	     Rij = hypot( (particle.phi[jspot] - phij), (etai - etaj) );
-	     Dij = min( pow( ptj, -2), pow( pti, -2)) * ( pow( (Rij/R), 2));
-	     
-	 
-//Attempt to solve phi wrap problem
-	     //if ( phij > 180)
-	     //{
-	     //	 float temp = phij - 360;
-	     //	 phi.assign (jspot, temp);
-	     //}
-	     
-	     //Assign these temporary variables to the values from the vector
-	     phii = phi-> GetEntry(i);
-	     phij = phi-> GetEntry(j);
-	     etai = eta-> GetEntry(i);
-	     etaj = eta-> GetEntry(j);
-	     pti = pt-> GetEntry(i);
-	     ptj = pt-> GetEntry(j);
-
-	     //Anti -kT algorithm
-	     Dib = pow( ptj], -2);
-	     Rij = hypot( (phii - phij), (etai - etaj) );
-	     Dij = min( pow( ptj, -2), pow( pti, -2)) * ( pow( (Rij/R), 2));
-	     if ( min( Dij, Dib) == Dib)
-	       {
-		 //remove jspot from particle list 
-		 //add to beam list?
-	       }
-	     else if ( min (Dif, Dib) == Dij)
-	       {
-		 //add 4 momenta? How do I access px, py, pz
-		 //remove jspot and ispot and add this new particle, but to where? fchain? or individually from every tree?
-	       }
-       }
-	   }
+  }
+//Fill and Draw Histograms
+histo1 -> SetMarkerStyle(21);
+histo1 -> Fill(jet.pt.size());
+histo1 -> Draw("");
+c1 -> SaveAs("c1.gif");
+}
