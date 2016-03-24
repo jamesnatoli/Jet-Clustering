@@ -34,7 +34,7 @@ int main()
   item.gender = false;
   Person.push_back(item);
 
-  list <P>::iterator it;
+  list <P>::iterator it, bit;
   it = Person.begin();
   Person.erase(it);
   for ( it = Person.begin(); it != Person.end(); it++)
