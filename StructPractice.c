@@ -1,3 +1,4 @@
+#include <vector>
 #include <iostream>
 #include <list>
 #include <string>
@@ -43,6 +44,18 @@ int main()
       part = *it;
       cout << "Copied Height = " << part.height << endl;
     }
+
+  //Vector Practice
+  vector<float> myvec (10);
+  int sz = myvec.size();
+  cout << sz << endl;
+
+  for (int i = 0; i < sz; i++)
+    myvec[i] = pow(i, 2);
+
+  cout << "The vector contains: ";
+  for (int j = 0; j < sz; j++)
+    cout << " " << myvec[j];
 
   return 0;
 }
