@@ -52,10 +52,14 @@ int main()
 
   for (int i = 0; i < sz; i++)
     myvec[i] = pow(i, 2);
-
+  
+  float bob;
   cout << "The vector contains: ";
   for (int j = 0; j < sz; j++)
-    cout << " " << myvec[j];
+    {
+      bob = myvec[j];
+      cout << " " << bob;
+    }
 
   return 0;
 }

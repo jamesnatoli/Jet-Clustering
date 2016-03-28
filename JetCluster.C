@@ -99,6 +99,11 @@ struct P
   float energy;
 } item;
 
+list<P> Particles;
+list<P> Jets;
+
+list <P>::iterator it, jt, minindex_i, listminindex_j, minindex_jB;//Create iterators to loop through list 
+
 void JetCLuster::Loop()
 {
   //Create Instance Variables
@@ -110,12 +115,7 @@ void JetCLuster::Loop()
   
   TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
   int numentry = pt->size();
-  
-  list<P> Particles;
-  list<P> Jets;
-  
-  list <P>::iterator it, jt, minindex_i, listminindex_j, minindex_jB;//Create iterators to loop through list  
-  
+    
   if (fChain == 0)
     return;
   //TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);                                                    
@@ -153,7 +153,7 @@ void JetCLuster::Loop()
 	{
 	  for( it = Particles.begin(); it != Particles.end(); it++)
 	    {
-	      for (jt = it + 1; jt != Particles.end(); jt++)
+	      for (jt = it.next(); jt != Particles.end(); jt++)
 		{
 		  Dij = Distance_P( (*it).phi, (*jt).phi, (*it).eta, (*jt).eta, (*it).pt, (*jt).pt );
 		  Dib = Distance_J( (*jt).pt );
