@@ -13,6 +13,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <iterator>
 
 using namespace std;
 
@@ -102,7 +103,7 @@ struct P
 list<P> Particles;
 list<P> Jets;
 
-list <P>::iterator it, jt, minindex_i, listminindex_j, minindex_jB;//Create iterators to loop through list 
+list <P>::iterator it, jt, minindex_i, minindex_j, minindex_jB;//Create iterators to loop through list 
 
 void JetCLuster::Loop()
 {
@@ -118,8 +119,9 @@ void JetCLuster::Loop()
     
   if (fChain == 0)
     return;
-  //TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);                                                    
-  
+
+  //TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);     
+
   Long64_t nentries = fChain->GetEntriesFast();
   
   Long64_t nbytes = 0, nb = 0;
@@ -137,11 +139,11 @@ void JetCLuster::Loop()
       //Check pointer to array syntax for accesing element
       for (int wh = 0; wh < numentry - 1; wh++)
 	{
-	  (*item.pt) = &pt[wh];
-	  (*item.phi) = PhiWrap( &phi[wh] );
-	  (*item.eta) = &eta[wh];
-	  (*item.mass) = &mass[wh];
-	  (*item.energy) = &mass[wh] * csq;
+	  item.pt = (*pt)[wh];
+	  item.phi = PhiWrap( (*phi)[wh] );
+	  item.eta = (*eta)[wh];
+	  item.mass = (*mass)[wh];
+	  item.energy = (*mass)[wh] * csq;
 	  Particles.push_back( item );
 	}
       
@@ -153,7 +155,7 @@ void JetCLuster::Loop()
 	{
 	  for( it = Particles.begin(); it != Particles.end(); it++)
 	    {
-	      for (jt = it.next(); jt != Particles.end(); jt++)
+	      for (jt = next(it, 1); jt != Particles.end(); jt++)
 		{
 		  Dij = Distance_P( (*it).phi, (*jt).phi, (*it).eta, (*jt).eta, (*it).pt, (*jt).pt );
 		  Dib = Distance_J( (*jt).pt );
@@ -161,23 +163,23 @@ void JetCLuster::Loop()
 		    { 
 		      Dijmin = Dij;
 		      minindex_i = it;  
-		      minindex_j = jt;                                                                                      
+		      minindex_j = jt; 
 		    }
-		  if (jt = (it + 1))
+		  if (distance( it, jt) >= 0)
 		    {
 		      if (Dib < Dibmin)
 			{
 			  Dibmin = Dib;
-			  minindex_jB = jt; //Save the particle so it can be removed later                            
+			  minindex_jB = jt; //Save the particle so it can be removed later
 			}
 		    }
 		}
 	    }
 	  
 	  //If the smallest is a beam, add to beam list and remove from particle list
-	  if (Dibmim < Dijmin)
+	  if (Dibmin < Dijmin)
 	    {
-	      Jets.push_back( minindex_jB );
+	      Jets.push_back( (*minindex_jB) );
 	      Particles.erase( minindex_j );
 	    }
 	  
@@ -208,14 +210,14 @@ void JetCLuster::Loop()
 	      item.energy = (newmass * csq);
 	      
 	      //Remove the Particles and add the new one
-	      Particles.erase( minindex_j);
-	      Particles.assign( minindex_i, item);
+	      Particles.erase( minindex_j );
+	      Particles.push_front( item );
 	    }
 	}
       
       //Fill and Draw Histograms
       histo1 -> SetMarkerStyle(21);
-      histo1 -> Fill(jet.pt.size());
+      histo1 -> Fill( Jets.size() );
       histo1 -> Draw("");
       c1 -> SaveAs("c1.gif");
     }

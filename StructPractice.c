@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <iterator>
 using namespace std;
 
 //This program is used to test the workings of Structs                                                    
@@ -14,7 +15,24 @@ struct P
   bool gender;
 } item, part;
 
-  
+list <P>::iterator Next ( list<P>::iterator nxt )
+{
+  list<P>::iterator junk;
+  junk = nxt;
+  junk++;
+  return junk;
+}
+
+list <P>::iterator Next ( list<P>::iterator nxt, int n )  
+{
+  list<P>::iterator junk;
+  junk = nxt;
+  for (int bip = 0; bip < n; bip++)
+    junk++;
+  return junk;
+}
+
+
 int main()
 {
 
@@ -40,13 +58,14 @@ int main()
   Person.erase(it);
   for ( it = Person.begin(); it != Person.end(); it++)
     {
+      bit = Next( it ); 
       cout << "First Height = " << (*it).height << endl;
       part = *it;
       cout << "Copied Height = " << part.height << endl;
     }
 
   //Vector Practice
-  vector<float> *myvec;
+  vector<float> *myvec = (10, 0);
   int sz = (*myvec).size();
   cout << sz << endl;
 
@@ -54,7 +73,7 @@ int main()
   for (int i = 0; i < sz; i++)
     {
       map = (float)i;
-      (*myvec[i]) = pow(map, 2);
+      (*myvec)[i] = pow(map, 2);
     }
   
   float bob;
