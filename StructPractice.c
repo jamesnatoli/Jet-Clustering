@@ -46,19 +46,23 @@ int main()
     }
 
   //Vector Practice
-  vector<float> myvec (10);
-  int sz = myvec.size();
+  vector<float> *myvec;
+  int sz = (*myvec).size();
   cout << sz << endl;
 
+  float map;
   for (int i = 0; i < sz; i++)
-    myvec[i] = pow(i, 2);
+    {
+      map = (float)i;
+      (*myvec[i]) = pow(map, 2);
+    }
   
   float bob;
   cout << "The vector contains: ";
   for (int j = 0; j < sz; j++)
     {
-      bob = myvec[j];
-      cout << " " << bob;
+      item.height =  (*myvec)[j];
+      cout << " " << item.height;
     }
 
   return 0;

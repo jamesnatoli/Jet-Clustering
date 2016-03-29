@@ -137,11 +137,11 @@ void JetCLuster::Loop()
       //Check pointer to array syntax for accesing element
       for (int wh = 0; wh < numentry - 1; wh++)
 	{
-	  item.pt = &pt[wh];
-	  item.phi = PhiWrap( &phi[wh] );
-	  item.eta = &eta[wh];
-	  item.mass = &mass[wh];
-	  item.energy = &mass[wh] * csq;
+	  (*item.pt) = &pt[wh];
+	  (*item.phi) = PhiWrap( &phi[wh] );
+	  (*item.eta) = &eta[wh];
+	  (*item.mass) = &mass[wh];
+	  (*item.energy) = &mass[wh] * csq;
 	  Particles.push_back( item );
 	}
       
