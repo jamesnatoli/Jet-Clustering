@@ -1,5 +1,5 @@
-#define JetCLuster_cxx
-#include "JetCLuster.h"
+#define JetCluster_cxx
+#include "JetCluster.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
@@ -17,33 +17,7 @@
 
 using namespace std;
 
-//void JetCLuster::Loop()
-//{
-  //   In a ROOT session, you can do:
-  //      Root > .L JetCLuster.C
-  //      Root > JetCLuster t
-  //      Root > t.GetEntry(12); // Fill t data members with entry number 12
-  //      Root > t.Show();       // Show values of entry 12
-  //      Root > t.Show(16);     // Read and show values of entry 16
-  //      Root > t.Loop();       // Loop on all entries
-  //
-  
-  //     This is the loop skeleton where:
-  //    jentry is the global entry number in the chain
-  //    ientry is the entry number in the current Tree
-  //  Note that the argument to GetEntry must be:
-  //    jentry for TChain::GetEntry
-  //    ientry for TTree::GetEntry and TBranch::GetEntry
-  //
-  //       To read only selected branches, Insert statements like:
-  // METHOD1:
-  //    fChain->SetBranchStatus("*",0);  // disable all branches
-  //    fChain->SetBranchStatus("branchname",1);  // activate branchname
-  // METHOD2: replace line
-  //    fChain->GetEntry(jentry);       //read all branches
-  //by  b_branchname->GetEntry(ientry); //read only this branch
-  
-  //These variables are used in the calculations                                                       
+//These variables are used in the calculations                                                       
 float Dib, Dij, Rij, deltaphi, deltaeta, Dijmin, Dibmin;
 
 //This value can be changed easily and it denotes the size of the cones                             
@@ -112,7 +86,7 @@ list <P>::iterator Next ( list<P>::iterator nxt )
   return junk;
 }
 
-//Alternate Declaration for next                                                                           
+//Alternate Declaration for next                      
 list <P>::iterator Next ( list<P>::iterator nxt, int n )
 {
   list<P>::iterator junk;
@@ -124,35 +98,59 @@ list <P>::iterator Next ( list<P>::iterator nxt, int n )
 
 list <P>::iterator it, jt, minindex_i, minindex_j, minindex_jB;//Create iterators to loop through list 
 
-void JetCLuster::Loop()
+//Create Instance Variables                                    
+float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT;
+
+void JetCluster::Loop()
 {
-  //Create Instance Variables
-  float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT;  
-  
-  //Create Canvas for Histogram                                                                               
+
+//   In a ROOT session, you can do:
+//      Root > .L JetCluster.C
+//      Root > JetCluster t
+//      Root > t.GetEntry(12); // Fill t data members with entry number 12
+//      Root > t.Show();       // Show values of entry 12
+//      Root > t.Show(16);     // Read and show values of entry 16
+//      Root > t.Loop();       // Loop on all entries
+//
+
+//     This is the loop skeleton where:
+//    jentry is the global entry number in the chain
+//    ientry is the entry number in the current Tree
+//  Note that the argument to GetEntry must be:
+//    jentry for TChain::GetEntry
+//    ientry for TTree::GetEntry and TBranch::GetEntry
+//
+//       To read only selected branches, Insert statements like:
+// METHOD1:
+//    fChain->SetBranchStatus("*",0);  // disable all branches
+//    fChain->SetBranchStatus("branchname",1);  // activate branchname
+// METHOD2: replace line
+//    fChain->GetEntry(jentry);       //read all branches
+//by  b_branchname->GetEntry(ientry); //read only this branch
+
+//Create Canvas for Histogram                                                                        
   TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 700, 500);
   c1 -> SetFillColor(42);
   
   TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
-  int numentry = pt->size();
-  
-  if (fChain == 0)
+  histo1 -> SetMarkerStyle(21);
+
+  if (fChain == 0) 
     return;
   
-  //TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);     
-  
   Long64_t nentries = fChain->GetEntriesFast();
-  
+
+  int numentry = pt->size();
+
   Long64_t nbytes = 0, nb = 0;
-  for (Long64_t jentry=0; jentry < nentries;jentry++)
+  for (Long64_t jentry=0; jentry<nentries;jentry++) 
     {
       Long64_t ientry = LoadTree(jentry);
       {
 	if (ientry < 0) break;
-	nb = fChain->GetEntry(jentry);
-	nbytes += nb;
-	// if (Cut(ientry) < 0) continue;                                      
-      }      
+	nb = fChain->GetEntry(jentry);   nbytes += nb;
+	// if (Cut(ientry) < 0) continue;
+      }
       
       //Fill the array "particles" with the values from the vectors
       //Check pointer to array syntax for accesing element
@@ -171,73 +169,70 @@ void JetCLuster::Loop()
       Dibmin = 100000;
       
       while ( !Particles.empty() ) //Stop condition
-	{
-	  for( it = Particles.begin(); it != Particles.end(); it++)
-	    {
-	      for (jt = Next(it); jt != Particles.end(); jt++)
-		{
-		  Dij = Distance_P( (*it).phi, (*jt).phi, (*it).eta, (*jt).eta, (*it).pt, (*jt).pt );
-		  Dib = Distance_J( (*jt).pt );
-		  if (Dij < Dijmin) //Determine if this is the smallest so far     
-		    { 
-		      Dijmin = Dij;
-		      minindex_i = it;  
-		      minindex_j = jt; 
-		    }
-		  if (distance( it, jt) >= 0)
-		    {
-		      if (Dib < Dibmin)
-			{
-			  Dibmin = Dib;
-			  minindex_jB = jt; //Save the particle so it can be removed later
-			}
-		    }
-		}
-	    }
-	  
-	  //If the smallest is a beam, add to beam list and remove from particle list
-	  if (Dibmin < Dijmin)
-	    {
-	      Jets.push_back( (*minindex_jB) );
-	      Particles.erase( minindex_j );
-	    }
-	  
-	  //If the smallest is not a beam, add momenta, add to list, and remove other two particles     
-	  else
-	    {
-	      //ADDING MOMENTUM
-	      
-	      //Adds the components of momentum in the x, y, and z directions
-	      px = ( ( (*minindex_i).pt * cos((*minindex_i).phi) ) + ((*minindex_j).pt * cos((*minindex_j).phi) ) );
-	      py = ( ( (*minindex_i).pt * sin((*minindex_i).phi) ) + ((*minindex_j).pt * sin((*minindex_j).phi) ) );
-	      pz = ( ( (*minindex_i).pt * sinh((*minindex_i).eta) ) + ((*minindex_i).pt * sinh((*minindex_j).eta) ) );
-	      
-	      //Calculate new values for new paricle
-	      newpT = hypot(px, py);
-	      totalpm = sqrt((px * px) + (py * py) + (pz * pz));
-	      newtheta = asin( newpT / totalpm);
-	      neweta = -log( tan( newtheta/ 2));
-	      newphi = acos( px / (totalpm * sin(newtheta)));
-	      //Add energies not mass
-	      newmass = ( ( (*minindex_i).energy + (*minindex_j).energy ) / csq);
-	      
-	      //Build New Struct with all new values
-	      item.pt = newpT;
-	      item.eta = neweta;
-	      item.phi = newphi;
-	      item.mass = newmass;
-	      item.energy = (newmass * csq);
-	      
-	      //Remove the Particles and add the new one
-	      Particles.erase( minindex_j );
-	      Particles.push_front( item );
-	    }
-	}
-      
-      //Fill and Draw Histograms
-      histo1 -> SetMarkerStyle(21);
+	 {
+	   for( it = Particles.begin(); it != Particles.end(); it++)
+	     {
+	       for (jt = Next(it); jt != Particles.end(); jt++)
+		 {
+		   Dij = Distance_P( (*it).phi, (*jt).phi, (*it).eta, (*jt).eta, (*it).pt, (*jt).pt );
+		   Dib = Distance_J( (*jt).pt );
+		   if (Dij < Dijmin) //Determine if this is the smallest so far     
+		     { 
+		       Dijmin = Dij;
+		       minindex_i = it;  
+		       minindex_j = jt; 
+		     }
+		   if (distance( it, jt) >= 0)
+		     {
+		       if (Dib < Dibmin)
+			 {
+			   Dibmin = Dib;
+			   minindex_jB = jt; //Save the particle so it can be removed later
+			 }
+		     }
+		 }
+	     }
+	   
+	   //If the smallest is a beam, add to beam list and remove from particle list
+	   if (Dibmin < Dijmin)
+	     {
+	       Jets.push_back( (*minindex_jB) );
+	       Particles.erase( minindex_j );
+	     }
+	   
+	   //If the smallest is not a beam, add momenta, add to list, and remove other two particles     
+	   else
+	     {
+	       //ADDING MOMENTUM
+	       
+	       //Adds the components of momentum in the x, y, and z directions
+	       px = ( ( (*minindex_i).pt * cos((*minindex_i).phi) ) + ((*minindex_j).pt * cos((*minindex_j).phi) ) );
+	       py = ( ( (*minindex_i).pt * sin((*minindex_i).phi) ) + ((*minindex_j).pt * sin((*minindex_j).phi) ) );
+	       pz = ( ( (*minindex_i).pt * sinh((*minindex_i).eta) ) + ((*minindex_i).pt * sinh((*minindex_j).eta) ) );
+	             
+	       //Calculate new values for new paricle
+	       newpT = hypot(px, py);
+	       totalpm = sqrt((px * px) + (py * py) + (pz * pz));
+	       newtheta = asin( newpT / totalpm);
+	       neweta = -log( tan( newtheta/ 2));
+	       newphi = acos( px / (totalpm * sin(newtheta)));
+	       //Add energies not mass
+	       newmass = ( ( (*minindex_i).energy + (*minindex_j).energy ) / csq);
+	             
+	       //Build New Struct with all new values
+	       item.pt = newpT;
+	       item.eta = neweta;
+	       item.phi = newphi;
+	       item.mass = newmass;
+	       item.energy = (newmass * csq);
+	       
+	       //Remove the Particles and add the new one
+	       Particles.erase( minindex_j );
+	       Particles.push_front( item );
+	     }
+	 }
       histo1 -> Fill( Jets.size() );
-      histo1 -> Draw("");
-      c1 -> SaveAs("c1.gif");
     }
+  histo1 -> Draw("");
+  c1 -> SaveAs("c1.gif");
 }

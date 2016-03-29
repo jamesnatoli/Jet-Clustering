@@ -2,7 +2,7 @@
 # DO NOT DELETE
 
 AutoDict_list_P__cxx.so: /home/natoli/PhysHonr269l/DarkQCD/darkgen/jetclusteringexercise/./JetCluster.C
-AutoDict_list_P__cxx.so: JetCLuster.h
+AutoDict_list_P__cxx.so: JetCluster.h
 AutoDict_list_P__cxx.so: /cvmfs/cms.cern.ch/slc6_amd64_gcc472/lcg/root/5.32.00-cms/include/TROOT.h
 AutoDict_list_P__cxx.so: /cvmfs/cms.cern.ch/slc6_amd64_gcc472/lcg/root/5.32.00-cms/include/TDirectory.h
 AutoDict_list_P__cxx.so: /cvmfs/cms.cern.ch/slc6_amd64_gcc472/lcg/root/5.32.00-cms/include/TNamed.h
