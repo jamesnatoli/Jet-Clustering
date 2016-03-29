@@ -59,12 +59,12 @@ int main()
   for ( it = Person.begin(); it != Person.end(); it++)
     {
       bit = Next( it ); 
-      cout << "First Height = " << (*it).height << endl;
+      cout << "First Height = " << it -> height << endl;
       part = *it;
       cout << "Copied Height = " << part.height << endl;
     }
 
-  //Vector Practice
+  /*Vector Practice
   vector<float> *myvec = (10, 0);
   int sz = (*myvec).size();
   cout << sz << endl;
@@ -83,7 +83,7 @@ int main()
       item.height =  (*myvec)[j];
       cout << " " << item.height;
     }
-
+  */
   return 0;
 }
 
