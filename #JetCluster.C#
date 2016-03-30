@@ -78,6 +78,7 @@ JVN_particle item;
 list <JVN_particle> Particles;
 list <JVN_particle> Jets;
 
+/*
 //Function to get next iterator       
 vector <JVN_particle>::iterator Next ( vector <JVN_particle>::iterator nxt )
 {
@@ -95,8 +96,10 @@ vector <JVN_particle>::iterator Next ( list<JVN_particle>::iterator nxt, int n )
     junk++;
   return junk;
 }
-
-  vector <JVN_particles>::iterator it, jt, minindex_i, minindex_j, minindex_jB;//Create iterators to loop through list 
+*/
+  
+//Create index variables for vector
+int it, jt, minindex_i, minindex_j, minindex_jB; 
 
 //Create Instance Variables                                    
 float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT;
@@ -170,19 +173,19 @@ void JetCluster::Loop()
       
       while ( !Particles.empty() ) //Stop condition
 	 {
-	   for( it = Particles.begin(); it != Particles.end(); it++)
+	   for( it = 0; it < Particles.size(); it++)
 	     {
-	       for (jt = Next(it); jt != Particles.end(); jt++)
+	       for (jt = it + 1; jt < Particles.size(); jt++)
 		 {
-		   Dij = Distance_P( (*it).phi, (*jt).phi, (*it).eta, (*jt).eta, (*it).pt, (*jt).pt );
-		   Dib = Distance_J( (*jt).pt );
+		   Dij = Distance_P( Particles[it].phi, Particles[jt].phi, Particles[it].eta, Particles[jt].eta, Particles[it].pt, Particles[jt].pt );
+		   Dib = Distance_J( Particles[jt].pt );
 		   if (Dij < Dijmin) //Determine if this is the smallest so far     
 		     { 
 		       Dijmin = Dij;
 		       minindex_i = it;  
 		       minindex_j = jt; 
 		     }
-		   if (distance( it, jt) >= 0)
+		   if ( jt < it )
 		     {
 		       if (Dib < Dibmin)
 			 {
@@ -196,8 +199,8 @@ void JetCluster::Loop()
 	   //If the smallest is a beam, add to beam list and remove from particle list
 	   if (Dibmin < Dijmin)
 	     {
-	       Jets.push_back( (*minindex_jB) );
-	       Particles.erase( minindex_j );
+	       Jets.push_back( Particles[minindex_jB] );
+	       Particles.erase( minindex_jB );
 	     }
 	   
 	   //If the smallest is not a beam, add momenta, add to list, and remove other two particles     
@@ -206,9 +209,9 @@ void JetCluster::Loop()
 	       //ADDING MOMENTUM
 	       
 	       //Adds the components of momentum in the x, y, and z directions
-	       px = ( ( (*minindex_i).pt * cos((*minindex_i).phi) ) + ((*minindex_j).pt * cos((*minindex_j).phi) ) );
-	       py = ( ( (*minindex_i).pt * sin((*minindex_i).phi) ) + ((*minindex_j).pt * sin((*minindex_j).phi) ) );
-	       pz = ( ( (*minindex_i).pt * sinh((*minindex_i).eta) ) + ((*minindex_i).pt * sinh((*minindex_j).eta) ) );
+	       px = ( ( Particles[minindex_i].pt * cos((Particles[minindex_j.phi) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) );
+	       py = ( ( Particles[minindex_i].pt * sin( Partiles[minindex_i].phi ) + (Particles[minindex_j].pt * sin( Particles[minindex_j].phi) ) );
+	       pz = ( ( Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) + (Particles[minindex_i].pt * sinh(Particles[minindex_j].eta) ) );
 	             
 	       //Calculate new values for new paricle
 	       newpT = hypot(px, py);
@@ -217,7 +220,7 @@ void JetCluster::Loop()
 	       neweta = -log( tan( newtheta/ 2));
 	       newphi = acos( px / (totalpm * sin(newtheta)));
 	       //Add energies not mass
-	       newmass = ( ( (*minindex_i).energy + (*minindex_j).energy ) / csq);
+	       newmass = ( ( Particles[minindex_i].energy + Particles[minindex_j].energy ) / csq);
 	             
 	       //Build New Struct with all new values
 	       item.pt = newpT;
@@ -229,8 +232,7 @@ void JetCluster::Loop()
 	       //Remove the Particles and add the new one
 	       Particles.erase( minindex_j );
 	       Particles.push_back( item );
-	     }
-	 }
+		      }
       histo1 -> Fill( Jets.size() );
     }
   histo1 -> Draw("");

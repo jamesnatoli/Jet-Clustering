@@ -1,13 +1,12 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Tue Mar 29 12:22:53 2016 by ROOT version 5.32/00
+// Tue Mar 29 14:13:21 2016 by ROOT version 5.32/00
 // from TTree tree/GenParticleAnalyzer output tree
 // found on file: for_jet_clustering_exercise.root
 //////////////////////////////////////////////////////////
 
-#ifndef JetCluster.h
+#ifndef JetCluster_h
 #define JetCluster_h
-
 
 #include <TROOT.h>
 #include <TChain.h>
