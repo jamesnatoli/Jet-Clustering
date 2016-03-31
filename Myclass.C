@@ -17,6 +17,7 @@
 //Denotes namespace
 using std::vector;
 using std::cout;
+using std::list;
 
 //Create index variables for vector                                                                  
 unsigned int it, jt; 
@@ -76,6 +77,10 @@ AllParticles item;
 //Create Vectors of Struct type
 vector <AllParticles> Particles;
 vector <AllParticles> Jets;
+vector <AllParticles> HighEnergyJets;
+
+//List fo Find Highest pT Jet
+list <float> SortingHEJets;
 
 //Very Important Method
 void Myclass::Loop()
@@ -110,9 +115,25 @@ void Myclass::Loop()
   c1 -> SetFillColor(42);
 
   //Set up Histograms
+
   //Number of jets in an event
   TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 50000);
   histo1 -> SetMarkerStyle(4);
+
+  //pT of jets 
+  TH1F *histo2 = new TH1F("histo2", "pT Spectrum of Jets", 100, -200, 1300);
+  histo2 -> SetMarkerStyle(4);
+
+  //pT of High Energy Jets
+  TH1F *histo3 = new TH1F("histo3", "pT Spectrum of HE Jets", 100, 900, 2500);
+  histo3 -> SetMarkerStyle(4);
+
+  //pT of highest Energy Jet
+  TH1F *histo4 = new TH1F("histo4", "pT of Highest Energy Jet per Event", 100, 900, 3000);
+  histo4 -> SetMarkerStyle(4);
+
+  //Set Cut for pT for HEJets
+  float cutpT = 925;
 
   //Fail-Safe
   if (fChain == 0) 
@@ -199,6 +220,18 @@ void Myclass::Loop()
 	{
 	  Jets.push_back( Particles[minindex_iB] );
 	  Particles.erase( Particles.begin() + minindex_iB );
+	 
+	  //Cut for HEJets
+	  if ( Particles[minindex_iB].pt > cutpT )
+	    {
+	      HighEnergyJets.push_back( Jets.back() );
+	      SortingHEJets.push_back( Jets.back().pt );
+	    }
+	  //Book a histogram for the pT of each jet
+	  histo2 -> Fill( Jets.back().pt );
+
+	  //Book a histogram for the pT of high energy jets
+	  histo3 -> Fill( HighEnergyJets.back().pt );
 	}
 
       //If the smallest is not a beam, add momenta, remove other two particles, and add to vector
@@ -241,9 +274,9 @@ void Myclass::Loop()
 	    }
 	  //Add new Particle
 	  Particles.push_back( item );
-
+	  
 	}//Exit ELSE statement for when the Dijmin is the smallest
-
+      
       //Reset values for next iteration
       Dijmin = 100000;
       Dibmin = 100000;
@@ -251,11 +284,18 @@ void Myclass::Loop()
       minindex_i = 0;
 	}//while loop
       
+      //Fill Histogram with Highest pT Jet from each event
+      SortingHEJets.sort();
+      histo4 -> Fill( SortingHEJets.back() );
+      
       //Fill histogram with the number of Jets per event
       histo1 -> Fill( Jets.size() );
-     }//Exit event (jentry) for loop
-
-   //Histogram stuff
-   histo1 -> Draw("");
-   c1 -> SaveAs("prettypic.gif");
+    }//Exit event (jentry) for loop
+  
+  //Histogram stuff
+  histo1 -> Draw("");
+  histo2 -> Draw("");
+  histo3 -> Draw("");
+  //  histo4 -> Draw("");
+  c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
