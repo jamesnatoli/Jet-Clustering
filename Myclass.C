@@ -222,7 +222,7 @@ void Myclass::Loop()
 	  Particles.erase( Particles.begin() + minindex_iB );
 	 
 	  //Cut for HEJets
-	  if ( Particles[minindex_iB].pt > cutpT )
+	  if ( Jets.back().pt > cutpT )
 	    {
 	      HighEnergyJets.push_back( Jets.back() );
 	      SortingHEJets.push_back( Jets.back().pt );
@@ -296,6 +296,6 @@ void Myclass::Loop()
   histo1 -> Draw("");
   histo2 -> Draw("");
   histo3 -> Draw("");
-  //  histo4 -> Draw("");
+  histo4 -> Draw("");
   c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
