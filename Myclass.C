@@ -14,13 +14,16 @@
 #include <vector>
 #include <iterator>
 
+//Denotes namespace
 using std::vector;
+using std::cout;
 
-//These variables are used in the calculations                              
-float Dib, Dij, Rij, deltaphi, deltaeta, Dijmin, Dibmin;
+//Create index variables for vector                                                                  
+unsigned int it, jt; 
+int minindex_i, minindex_j, minindex_iB;
 
-//This value can be changed easily and it denotes the size of the cones     
-float Rrr = .4;
+//Create Instance Variables                                                                          
+float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT, Dib, Dij, Rij, Rrr, deltaphi, deltaeta, Dijmin, Dibmin;
 
 //Set Speed of light for Energy Calc                                                    
 const float csq = pow(299792458, 2);
@@ -28,7 +31,7 @@ const float csq = pow(299792458, 2);
 //Set Pi for Phi Wrap                                                                   
 const double PI = 4 * atan(1);
 
-//Function for Phi Wrap Soln                                                                                     
+//Function for Phi Wrap Soln                                                                         
 float PhiWrap( float val )
 {
   float output;
@@ -45,7 +48,7 @@ float Distance_P (float aphi, float bphi, float ceta, float deta, float ept, flo
   deltaphi = PhiWrap (aphi - bphi) ;
   deltaeta = ceta - deta;
   Rij = hypot( deltaphi, deltaeta);
-  Dij = min( pow( ept, -2), pow( fpt, -2));
+  Dij = std::min( pow( ept, -2), pow( fpt, -2));
   Dij = Dij * pow( ( Rij / Rrr), 2);
   return Dij;
 }
@@ -57,9 +60,8 @@ float Distance_J (float gpt)
   return Dib;
 }
 
-//Declare a struct (P) to hold arrays which will hold all of the values. The object particle of type P can acess all of these values                                           
-
-struct JVN_particle
+//Declare a struct (AllParticles) to hold arrays which will hold all of the values. The object particle of type P can acess all of these values                                           
+struct AllParticles
 {
   float pt;
   float phi;
@@ -68,17 +70,14 @@ struct JVN_particle
   float energy;
 };
 
-JVN_particle item;
+//Create a struct object that can access the member variables
+AllParticles item;
 
-vector <JVN_particle> Particles;
-vector <JVN_particle> Jets;
+//Create Vectors of Struct type
+vector <AllParticles> Particles;
+vector <AllParticles> Jets;
 
-//Create index variables for vector                                                             
-int it, jt, minindex_i, minindex_j, minindex_iB;
-
-//Create Instance Variables                                                                     
-float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT;
-
+//Very Important Method
 void Myclass::Loop()
 {
 
@@ -110,27 +109,41 @@ void Myclass::Loop()
   TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 700, 500);
   c1 -> SetFillColor(42);
 
-  TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 200);
-  histo1 -> SetMarkerStyle(21);
+  //Set up Histograms
+  //Number of jets in an event
+  TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 50000);
+  histo1 -> SetMarkerStyle(4);
 
+  //Fail-Safe
   if (fChain == 0) 
     return;
 
-   Long64_t nentries = fChain->GetEntriesFast();
+  //This value can be changed easily and it denotes the size of the cones          
+  Rrr = .4;
 
-   Long64_t nbytes = 0, nb = 0;
-   for (Long64_t jentry=0; jentry < nentries; jentry++) 
-     {
+  //Get the numner of events
+  Long64_t nentries = fChain->GetEntriesFast();
+  
+  Long64_t nbytes = 0, nb = 0;
+  
+  //EVENT LOOP
+  for (Long64_t jentry=0; jentry < nentries; jentry++) 
+    {
+      //Load the event in to memory
       Long64_t ientry = LoadTree(jentry);
-      {
-	std::cout<< "jentry = " << jentry << std::endl;
-	if (ientry < 0) 
-	  break;
-	nb = fChain->GetEntry(jentry);   
-	nbytes += nb;
-      }
-      // if (Cut(ientry) < 0) continue;
 
+      //Print the event number
+      std::cout<< "jentry = " << jentry << std::endl;
+      
+      //Fail-safe
+      if (ientry < 0) 
+	break;
+      nb = fChain->GetEntry(jentry);   
+      nbytes += nb;
+      
+      // if (Cut(ientry) < 0) continue;
+      
+      //Get the number of elements in one of the vectors
       int numentry = pt->size();
       
       //Fill the array "particles" with the values from the vectors                             
@@ -143,80 +156,79 @@ void Myclass::Loop()
           item.mass = (*mass)[wh];
           item.energy = (*mass)[wh] * csq;
           Particles.push_back( item );
-	  //	  std::cout<< "Particle pt = " << Particles.back().pt << std::endl;
         }
       
       //This is to make sure that the first value checked is assigned to the smallest           
       Dijmin = 100000;
       Dibmin = 100000;
 
-      int icount = 0;
-      while ( (!Particles.empty()) || icount > 10000 ) //Stop condition                                             
+      //Ensure that the loop keeps going until every particle is in a beam
+      while ( !Particles.empty() )     
 	{
-	  //	  std::cout<< "Particles size = " << Particles.size() << std::endl;
-	  //	  std::cout<< "icount = " << icount <<std::endl;
-	  icount ++;
+	  //Loop over the first particle in the pair
 	  for( it = 0; it < Particles.size(); it++)
-	    {
-	      //	      std::cout<< "it = " << it << std::endl;
-	      
+	    { 
+	      //Loop over the second particle in the pair
 	      for (jt = it + 1; jt < Particles.size(); jt++)
 		{
-  
+		  //Calculate the distance between the particles
 		  Dij = Distance_P( Particles[it].phi, Particles[jt].phi, Particles[it].eta, Particles[jt].eta, Particles[it].pt, Particles[jt].pt );
-		  //std::cout<< "Dij = " << Dij << " Dijmin = " << Dijmin << "i particle = " << it << " and j particle = " << jt <<std::endl;
-		  if (Dij < Dijmin) //Determine if this is the smallest so far                 
+		  //Determine if this is the smallest Dij so far
+		  if (Dij < Dijmin)                 
 		    {
 		      Dijmin = Dij;
-		      minindex_i = it;
+		      minindex_i = it;//Save indeces for later
 		      minindex_j = jt;
-		    }// if (Dij		  
-		}//for ( jt = it
-	      //std::cout << "For particle " << it << " the closest particle pair is " << minindex_i <<" " << minindex_j <<std::endl;
+		    }
+		  
+		}//Exit inner (jt) for loop
+
+	      //Calculate beam distance
 	      Dib = Distance_J( Particles[it].pt );
+	      //Figure out if the Dib is the smallest so far
 	      if (Dib < Dibmin)
 		{
 		  Dibmin = Dib;
-		  minindex_iB = it; //Save the particle so it can be removed later                                                                      
-		}//if (Dib <  
-	    }// for (it = 0
+		  minindex_iB = it; //Save the particle so it can be removed later
+		}//if (Dib < Dibmin)
+
+	    }// exit outer (it) for loop
+
       //If the smallest is a beam, add to beam list and remove from particle list          
       if (Dibmin < Dijmin)
 	{
-	  //std::cout<<"closest particle is beam and it is " << minindex_iB << std::endl;
 	  Jets.push_back( Particles[minindex_iB] );
 	  Particles.erase( Particles.begin() + minindex_iB );
-	  //std::cout<<"Particle Size = " << Particles.size()<<std::endl; 
 	}
 
-      //If the smallest is not a beam, add momenta, add to list, and remove other two particles
+      //If the smallest is not a beam, add momenta, remove other two particles, and add to vector
       else
 	{
-	  //	  std::cout<< "closest particles are" << minindex_j << " and " << minindex_i <<std::endl;
-	  //ADDING MOMENTUM                                                                                                                             
-
-	  //Adds the components of momentum in the x, y, and z directions                               
+	  //ADDING MOMENTUM                                                                                                     
+	  //Adds the components of momentum in the x, y, and z directions     
 	  px = ( ( (Particles[minindex_i].pt * cos((Particles[minindex_j].phi) ) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) ) );
 	  py = ( ( (Particles[minindex_i].pt * sin((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * sin( Particles[minindex_j].phi) ) ) );
 	  pz = ( ( (Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) ) + (Particles[minindex_i].pt * sinh(Particles[minindex_j].eta) ) );
 
-	  //Calculate new values for new paricle                                                                                                        
+	  //Calculate new values for new paricle         
 	  newpT = hypot(px, py);
 	  totalpm = sqrt((px * px) + (py * py) + (pz * pz));
 	  newtheta = asin( newpT / totalpm);
 	  neweta = -log( tan( newtheta/ 2));
 	  newphi = acos( px / (totalpm * sin(newtheta)));
-	  //Add energies not mass                                                                                                                       
+
+	  //Add energies not mass                        
 	  newmass = ( ( Particles[minindex_i].energy + Particles[minindex_j].energy ) / csq);
 	  
-	  //Build New Struct with all new values                                                                                                        
+	  //Build New Struct with all new values                                          
 	  item.pt = newpT;
 	  item.eta = neweta;
 	  item.phi = newphi;
 	  item.mass = newmass;
 	  item.energy = (newmass * csq);
 	  
-	  //Remove the Particles and add the new one
+	  //Remove the Particles
+	  //Check to see which one is bigger before removing so as so not mess up indeces
 	  if ( minindex_j < minindex_i )
 	    {
 	      Particles.erase( Particles.begin() + (minindex_i) );
@@ -227,16 +239,23 @@ void Myclass::Loop()
 	      Particles.erase( Particles.begin() + (minindex_j) );
 	      Particles.erase( Particles.begin() + (minindex_i) );
 	    }
-	  //	  std::cout<<"Particle Size = " << Particles.size()<<std::endl;
+	  //Add new Particle
 	  Particles.push_back( item );
-	}
+
+	}//Exit ELSE statement for when the Dijmin is the smallest
+
+      //Reset values for next iteration
       Dijmin = 100000;
       Dibmin = 100000;
       minindex_j = 0;
       minindex_i = 0;
 	}//while loop
+      
+      //Fill histogram with the number of Jets per event
       histo1 -> Fill( Jets.size() );
-     }//for (jentry
+     }//Exit event (jentry) for loop
+
+   //Histogram stuff
    histo1 -> Draw("");
-   c1 -> SaveAs("c1.gif");
+   c1 -> SaveAs("prettypic.gif");
 }//Void Loop()

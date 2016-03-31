@@ -12,6 +12,8 @@
 #include <TChain.h>
 #include <TFile.h>
 
+using std::vector;
+
 // Header file for the classes stored in the TTree if any.
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
@@ -133,11 +135,13 @@ void Myclass::Show(Long64_t entry)
    if (!fChain) return;
    fChain->Show(entry);
 }
+
+
 Int_t Myclass::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
-}
+   }
 #endif // #ifdef Myclass_cxx
