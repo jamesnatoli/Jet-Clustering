@@ -111,13 +111,15 @@ void Myclass::Loop()
 //by  b_branchname->GetEntry(ientry); //read only this branch
 
   //Create Canvas
-  TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 700, 500);
+  TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 1400, 700);
   c1 -> SetFillColor(42);
-
+  c1 -> Divide(2, 2);
+  c1 -> cd(1);
+  
   //Set up Histograms
-
+  
   //Number of jets in an event
-  TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 50000);
+  TH1F* histo1 = new TH1F("histo1", "Number of Jets", 100, 0, 55);
   histo1 -> SetMarkerStyle(4);
 
   //pT of jets 
@@ -125,15 +127,15 @@ void Myclass::Loop()
   histo2 -> SetMarkerStyle(4);
 
   //pT of High Energy Jets
-  TH1F *histo3 = new TH1F("histo3", "pT Spectrum of HE Jets", 100, 900, 2500);
+  TH1F *histo3 = new TH1F("histo3", "pT Spectrum of HE Jets", 100, 0, 2500);
   histo3 -> SetMarkerStyle(4);
 
   //pT of highest Energy Jet
-  TH1F *histo4 = new TH1F("histo4", "pT of Highest Energy Jet per Event", 100, 900, 3000);
+  TH1F *histo4 = new TH1F("histo4", "pT of Highest Energy Jet per Event", 100, 0, 3000);
   histo4 -> SetMarkerStyle(4);
 
-  //Set Cut for pT for HEJets
-  float cutpT = 925;
+  //Set Cut for pT HEJets
+  float cutpT = 300;
 
   //Fail-Safe
   if (fChain == 0) 
@@ -148,7 +150,7 @@ void Myclass::Loop()
   Long64_t nbytes = 0, nb = 0;
   
   //EVENT LOOP
-  for (Long64_t jentry=0; jentry < nentries; jentry++) 
+  for (Long64_t jentry=0; jentry < 100; jentry++) 
     {
       //Load the event in to memory
       Long64_t ientry = LoadTree(jentry);
@@ -226,12 +228,12 @@ void Myclass::Loop()
 	    {
 	      HighEnergyJets.push_back( Jets.back() );
 	      SortingHEJets.push_back( Jets.back().pt );
+	      //Book a histogram for the pT of high energy jets                                                      
+	      histo3 -> Fill( HighEnergyJets.back().pt );
 	    }
 	  //Book a histogram for the pT of each jet
 	  histo2 -> Fill( Jets.back().pt );
 
-	  //Book a histogram for the pT of high energy jets
-	  histo3 -> Fill( HighEnergyJets.back().pt );
 	}
 
       //If the smallest is not a beam, add momenta, remove other two particles, and add to vector
@@ -290,12 +292,20 @@ void Myclass::Loop()
       
       //Fill histogram with the number of Jets per event
       histo1 -> Fill( Jets.size() );
+      
+      //Clear Jets vectors for next event
+      SortingHEJets.clear();
+      HighEnergyJets.clear();
+      Jets.clear();
     }//Exit event (jentry) for loop
   
   //Histogram stuff
   histo1 -> Draw("");
+  c1 -> cd(2);
   histo2 -> Draw("");
+  c1 -> cd(3);
   histo3 -> Draw("");
+  c1 -> cd(4);
   histo4 -> Draw("");
   c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
