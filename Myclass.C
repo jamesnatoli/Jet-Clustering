@@ -24,7 +24,7 @@ unsigned int it, jt;
 int minindex_i, minindex_j, minindex_iB;
 
 //Create Instance Variables                                                                          
-float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT, Dib, Dij, Rij, Rrr, deltaphi, deltaeta, Dijmin, Dibmin;
+float px, py, pz, newphi, neweta, newmass, newtheta, totalpm, newpT, Dib, Dij, Rij, Rrr, deltaphi, deltaeta, Dijmin, Dibmin, newenergy;
 
 //Set Speed of light for Energy Calc                                                    
 const float csq = pow(299792458, 2);
@@ -113,8 +113,8 @@ void Myclass::Loop()
   //Create Canvas
   TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 900, 500);
   c1 -> SetFillColor(42);
-  //c1 -> Divide(1, 2);
-  //c1 -> cd(1);
+  c1 -> Divide(2, 2);
+  c1 -> cd(1);
   
   //Set up Histograms
   
@@ -158,7 +158,7 @@ void Myclass::Loop()
   Long64_t nbytes = 0, nb = 0;
   
   //EVENT LOOP
-  for (Long64_t jentry=0; jentry < nentries; jentry++) 
+  for (Long64_t jentry=0; jentry < 100; jentry++) 
     {
       //Load the event in to memory
       Long64_t ientry = LoadTree(jentry);
@@ -185,7 +185,12 @@ void Myclass::Loop()
           item.phi = (*phi)[wh];
           item.eta = (*eta)[wh];
           item.mass = (*mass)[wh];
-          item.energy = (*mass)[wh] * csq;
+	  //Calculate Values for energy
+	  px = (*pt)[wh] * cos ( (*phi)[wh] );
+	  py = (*pt)[wh] * sin ( (*phi)[wh] );
+	  pz = (*pt)[wh] * sinh( (*eta)[wh] );
+	  totalpm = sqrt((px * px) + (py * py) + (pz * pz));
+          item.energy = sqrt( pow( totalpm, 2) + pow( (*mass)[wh], 2));
           Particles.push_back( item );
         }
       
@@ -236,12 +241,13 @@ void Myclass::Loop()
 	    {
 	      HighEnergyJets.push_back( Jets.back() );
 	      SortingHEJets.push_back( Jets.back().pt );
-	      //Book a histogram for the pT of high energy jets                                                      
+
+	      //Book a histogram for the pT of high energy jets                                   
+	      jeteta -> Fill( Jets.back().eta );
 	      histo3 -> Fill( HighEnergyJets.back().pt );
 	    }
 	  //Book a histogram for the pT, eta, and phi of each jet
 	  histo2 -> Fill( Jets.back().pt );
-	  jeteta -> Fill( Jets.back().eta );
 	  jetphi -> Fill( Jets.back().phi );
 	}
 
@@ -252,24 +258,25 @@ void Myclass::Loop()
 	  //Adds the components of momentum in the x, y, and z directions     
 	  px = ( ( (Particles[minindex_i].pt * cos((Particles[minindex_j].phi) ) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) ) );
 	  py = ( ( (Particles[minindex_i].pt * sin((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * sin( Particles[minindex_j].phi) ) ) );
-	  pz = ( ( (Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) ) + (Particles[minindex_i].pt * sinh(Particles[minindex_j].eta) ) );
+	  pz = ( ( (Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) ) + (Particles[minindex_j].pt * sinh(Particles[minindex_j].eta) ) );
 
 	  //Calculate new values for new paricle         
 	  newpT = hypot(px, py);
 	  totalpm = sqrt((px * px) + (py * py) + (pz * pz));
 	  newtheta = asin( newpT / totalpm);
 	  neweta = -log( tan( newtheta/ 2));
-	  newphi = acos( px / (totalpm * sin(newtheta)));
+	  newphi = atan2( py, px);
+	  newenergy = Particles[minindex_i].energy + Particles[minindex_j].energy;
 
-	  //Add energies not mass                        
-	  newmass = ( ( Particles[minindex_i].energy + Particles[minindex_j].energy ) / csq);
+	  //Add energies not mass
+	  newmass = sqrt( pow(newenergy, 2) - pow( totalpm, 2));
 	  
 	  //Build New Struct with all new values                                          
 	  item.pt = newpT;
 	  item.eta = neweta;
 	  item.phi = newphi;
 	  item.mass = newmass;
-	  item.energy = (newmass * csq);
+	  item.energy = newenergy;
 	  
 	  //Remove the Particles
 	  //Check to see which one is bigger before removing so as so not mess up indeces
@@ -293,6 +300,7 @@ void Myclass::Loop()
       Dibmin = 100000;
       minindex_j = 0;
       minindex_i = 0;
+      minindex_iB = 0;
 	}//while loop
       
       //Fill Histogram with Highest pT Jet from each event
@@ -311,14 +319,14 @@ void Myclass::Loop()
   //Histogram stuff
   //histo1 -> Draw("");
   //c1 -> cd(2);
-  //histo2 -> Draw("");
-  //c1 -> cd(3);
+  histo2 -> Draw("");
+  c1 -> cd(2);
   //histo3 -> Draw("");
   //c1 -> cd(4);
   //histo4 -> Draw("");
   //c1 -> cd(1);
   jeteta -> Draw("");
-  //c1 -> cd(2);
-  //jetphi -> Draw("");
-  //c1 -> SaveAs("prettypic.gif");
+  c1 -> cd(3);
+  jetphi -> Draw("");
+  c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
