@@ -111,10 +111,10 @@ void Myclass::Loop()
 //by  b_branchname->GetEntry(ientry); //read only this branch
 
   //Create Canvas
-  TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 1400, 700);
+  TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 900, 500);
   c1 -> SetFillColor(42);
-  c1 -> Divide(2, 2);
-  c1 -> cd(1);
+  //c1 -> Divide(1, 2);
+  //c1 -> cd(1);
   
   //Set up Histograms
   
@@ -134,6 +134,14 @@ void Myclass::Loop()
   TH1F *histo4 = new TH1F("histo4", "pT of Highest Energy Jet per Event", 100, 0, 3000);
   histo4 -> SetMarkerStyle(4);
 
+  //Eta of Jets
+  TH1F *jeteta = new TH1F("jeteta", "Eta Spectrum of Jets", 100, -10, 10);
+  jeteta -> SetMarkerStyle(4);
+
+  //Phi of Jets
+  TH1F *jetphi = new TH1F("jetphi", "Phi Spectrum of Jets", 100, -10, 10);
+  jetphi -> SetMarkerStyle(4);
+
   //Set Cut for pT HEJets
   float cutpT = 300;
 
@@ -150,7 +158,7 @@ void Myclass::Loop()
   Long64_t nbytes = 0, nb = 0;
   
   //EVENT LOOP
-  for (Long64_t jentry=0; jentry < 100; jentry++) 
+  for (Long64_t jentry=0; jentry < nentries; jentry++) 
     {
       //Load the event in to memory
       Long64_t ientry = LoadTree(jentry);
@@ -231,9 +239,10 @@ void Myclass::Loop()
 	      //Book a histogram for the pT of high energy jets                                                      
 	      histo3 -> Fill( HighEnergyJets.back().pt );
 	    }
-	  //Book a histogram for the pT of each jet
+	  //Book a histogram for the pT, eta, and phi of each jet
 	  histo2 -> Fill( Jets.back().pt );
-
+	  jeteta -> Fill( Jets.back().eta );
+	  jetphi -> Fill( Jets.back().phi );
 	}
 
       //If the smallest is not a beam, add momenta, remove other two particles, and add to vector
@@ -300,12 +309,16 @@ void Myclass::Loop()
     }//Exit event (jentry) for loop
   
   //Histogram stuff
-  histo1 -> Draw("");
-  c1 -> cd(2);
-  histo2 -> Draw("");
-  c1 -> cd(3);
-  histo3 -> Draw("");
-  c1 -> cd(4);
-  histo4 -> Draw("");
-  c1 -> SaveAs("prettypic.gif");
+  //histo1 -> Draw("");
+  //c1 -> cd(2);
+  //histo2 -> Draw("");
+  //c1 -> cd(3);
+  //histo3 -> Draw("");
+  //c1 -> cd(4);
+  //histo4 -> Draw("");
+  //c1 -> cd(1);
+  jeteta -> Draw("");
+  //c1 -> cd(2);
+  //jetphi -> Draw("");
+  //c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
