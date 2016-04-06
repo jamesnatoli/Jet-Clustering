@@ -113,7 +113,10 @@ void Myclass::Loop()
   //Create Canvas
   TCanvas *c1 = new TCanvas("c1", "demo", 200, 10, 900, 500);
   c1 -> SetFillColor(42);
-  c1 -> Divide(2, 2);
+  TCanvas *c2 = new TCanvas("c2", "demo", 200, 10, 900, 500);
+  c2 -> SetFillColor(42);
+
+  c1 -> Divide(1, 2);
   c1 -> cd(1);
   
   //Set up Histograms
@@ -143,7 +146,7 @@ void Myclass::Loop()
   jetphi -> SetMarkerStyle(4);
 
   //Set Cut for pT HEJets
-  float cutpT = 300;
+  float cutpT = 50;
 
   //Fail-Safe
   if (fChain == 0) 
@@ -158,7 +161,7 @@ void Myclass::Loop()
   Long64_t nbytes = 0, nb = 0;
   
   //EVENT LOOP
-  for (Long64_t jentry=0; jentry < 100; jentry++) 
+  for (Long64_t jentry=0; jentry < nentries; jentry++) 
     {
       //Load the event in to memory
       Long64_t ientry = LoadTree(jentry);
@@ -256,14 +259,14 @@ void Myclass::Loop()
 	{
 	  //ADDING MOMENTUM                                                                                                     
 	  //Adds the components of momentum in the x, y, and z directions     
-	  px = ( ( (Particles[minindex_i].pt * cos((Particles[minindex_j].phi) ) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) ) );
+	  px = ( ( (Particles[minindex_i].pt * cos((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) ) );
 	  py = ( ( (Particles[minindex_i].pt * sin((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * sin( Particles[minindex_j].phi) ) ) );
 	  pz = ( ( (Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) ) + (Particles[minindex_j].pt * sinh(Particles[minindex_j].eta) ) );
 
 	  //Calculate new values for new paricle         
 	  newpT = hypot(px, py);
 	  totalpm = sqrt((px * px) + (py * py) + (pz * pz));
-	  newtheta = asin( newpT / totalpm);
+	  newtheta = atan2( newpT,  pz);
 	  neweta = -log( tan( newtheta/ 2));
 	  newphi = atan2( py, px);
 	  newenergy = Particles[minindex_i].energy + Particles[minindex_j].energy;
@@ -319,14 +322,14 @@ void Myclass::Loop()
   //Histogram stuff
   //histo1 -> Draw("");
   //c1 -> cd(2);
-  histo2 -> Draw("");
-  c1 -> cd(2);
+  //histo2 -> Draw("");
+  //c1 -> cd(2);
   //histo3 -> Draw("");
   //c1 -> cd(4);
   //histo4 -> Draw("");
   //c1 -> cd(1);
   jeteta -> Draw("");
-  c1 -> cd(3);
+  c1 -> cd(2);
   jetphi -> Draw("");
   c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
