@@ -12,7 +12,6 @@
 #include <fstream>
 #include <list>
 #include <vector>
-#include <iterator>
 
 //Denotes namespace
 using std::vector;
@@ -69,6 +68,7 @@ struct AllParticles
   float eta;
   float mass;
   float energy;
+  int particlecount;
 };
 
 //Create a struct object that can access the member variables
@@ -116,8 +116,8 @@ void Myclass::Loop()
   TCanvas *c2 = new TCanvas("c2", "demo", 200, 10, 900, 500);
   c2 -> SetFillColor(42);
 
-  c1 -> Divide(1, 2);
-  c1 -> cd(1);
+  //c1 -> Divide(1, 2);
+  //c1 -> cd(1);
   
   //Set up Histograms
   
@@ -144,6 +144,10 @@ void Myclass::Loop()
   //Phi of Jets
   TH1F *jetphi = new TH1F("jetphi", "Phi Spectrum of Jets", 100, -10, 10);
   jetphi -> SetMarkerStyle(4);
+
+  //Number of Particles in Jets above 50Gev
+  TH1F *JetNumParticles = new TH1F("JetNumParticles", "Number of Particles in Jets w/ pT > 50 GeV", 100, 0, 100);
+  JetNumParticles -> SetMarkerStyle(4);
 
   //Set Cut for pT HEJets
   float cutpT = 50;
@@ -179,6 +183,10 @@ void Myclass::Loop()
       
       //Get the number of elements in one of the vectors
       int numentry = pt->size();
+
+      //This will (hopefully) store the number of particles in each jet
+      vector <int> partcnt;
+      int numparticles;
       
       //Fill the array "particles" with the values from the vectors                             
       //Check pointer to array syntax for accesing element                                      
@@ -188,6 +196,7 @@ void Myclass::Loop()
           item.phi = (*phi)[wh];
           item.eta = (*eta)[wh];
           item.mass = (*mass)[wh];
+	  item.particlecount = 1;
 	  //Calculate Values for energy
 	  px = (*pt)[wh] * cos ( (*phi)[wh] );
 	  py = (*pt)[wh] * sin ( (*phi)[wh] );
@@ -230,30 +239,31 @@ void Myclass::Loop()
 		  Dibmin = Dib;
 		  minindex_iB = it; //Save the particle so it can be removed later
 		}//if (Dib < Dibmin)
-
+	      
 	    }// exit outer (it) for loop
-
-      //If the smallest is a beam, add to beam list and remove from particle list          
+	  
+	  //If the smallest is a beam, add to beam list and remove from particle list          
       if (Dibmin < Dijmin)
 	{
 	  Jets.push_back( Particles[minindex_iB] );
 	  Particles.erase( Particles.begin() + minindex_iB );
-	 
+	  
 	  //Cut for HEJets
 	  if ( Jets.back().pt > cutpT )
 	    {
 	      HighEnergyJets.push_back( Jets.back() );
 	      SortingHEJets.push_back( Jets.back().pt );
-
+	      
 	      //Book a histogram for the pT of high energy jets                                   
 	      jeteta -> Fill( Jets.back().eta );
 	      histo3 -> Fill( HighEnergyJets.back().pt );
+	      JetNumParticles -> Fill( Jets.back().particlecount );
 	    }
 	  //Book a histogram for the pT, eta, and phi of each jet
 	  histo2 -> Fill( Jets.back().pt );
 	  jetphi -> Fill( Jets.back().phi );
 	}
-
+      
       //If the smallest is not a beam, add momenta, remove other two particles, and add to vector
       else
 	{
@@ -262,7 +272,7 @@ void Myclass::Loop()
 	  px = ( ( (Particles[minindex_i].pt * cos((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * cos(Particles[minindex_j].phi) ) ) );
 	  py = ( ( (Particles[minindex_i].pt * sin((Particles[minindex_i].phi) ) ) + (Particles[minindex_j].pt * sin( Particles[minindex_j].phi) ) ) );
 	  pz = ( ( (Particles[minindex_i].pt * sinh(Particles[minindex_i].eta) ) ) + (Particles[minindex_j].pt * sinh(Particles[minindex_j].eta) ) );
-
+	  
 	  //Calculate new values for new paricle         
 	  newpT = hypot(px, py);
 	  totalpm = sqrt((px * px) + (py * py) + (pz * pz));
@@ -270,7 +280,7 @@ void Myclass::Loop()
 	  neweta = -log( tan( newtheta/ 2));
 	  newphi = atan2( py, px);
 	  newenergy = Particles[minindex_i].energy + Particles[minindex_j].energy;
-
+	  
 	  //Add energies not mass
 	  newmass = sqrt( pow(newenergy, 2) - pow( totalpm, 2));
 	  
@@ -280,6 +290,8 @@ void Myclass::Loop()
 	  item.phi = newphi;
 	  item.mass = newmass;
 	  item.energy = newenergy;
+	  //Add the number of particles in each particle together 
+	  item.particlecount = Particles[minindex_j].particlecount + Particles[minindex_i].particlecount;
 	  
 	  //Remove the Particles
 	  //Check to see which one is bigger before removing so as so not mess up indeces
@@ -317,19 +329,25 @@ void Myclass::Loop()
       SortingHEJets.clear();
       HighEnergyJets.clear();
       Jets.clear();
+      Particles.clear();
     }//Exit event (jentry) for loop
   
   //Histogram stuff
-  //histo1 -> Draw("");
-  //c1 -> cd(2);
-  //histo2 -> Draw("");
-  //c1 -> cd(2);
-  //histo3 -> Draw("");
-  //c1 -> cd(4);
-  //histo4 -> Draw("");
-  //c1 -> cd(1);
-  jeteta -> Draw("");
-  c1 -> cd(2);
-  jetphi -> Draw("");
+  
+  /*
+    histo1 -> Draw("");
+    c1 -> cd(2);
+    histo2 -> Draw("");
+    c1 -> cd(2);
+    histo3 -> Draw("");
+    c1 -> cd(4);
+    histo4 -> Draw("");
+    c1 -> cd(1);
+    jeteta -> Draw("");
+    c1 -> cd(2);
+    jetphi -> Draw("");
+  */
+  
+  JetNumParticles -> Draw("");
   c1 -> SaveAs("prettypic.gif");
 }//Void Loop()
